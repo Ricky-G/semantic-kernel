@@ -1,12 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
-internal class UpsertVectorRequest
+[Experimental("SKEXP0020")]
+internal sealed class UpsertVectorRequest
 {
     public static UpsertVectorRequest Create(string collectionName)
     {
@@ -18,6 +21,16 @@ internal class UpsertVectorRequest
         this.Batch.Ids.Add(vectorRecord.PointId);
         this.Batch.Vectors.Add(vectorRecord.Embedding);
         this.Batch.Payloads.Add(vectorRecord.Payload);
+        return this;
+    }
+
+    public UpsertVectorRequest UpsertRange(IEnumerable<QdrantVectorRecord> vectorRecords)
+    {
+        foreach (var vectorRecord in vectorRecords)
+        {
+            this.UpsertVector(vectorRecord);
+        }
+
         return this;
     }
 
@@ -34,22 +47,22 @@ internal class UpsertVectorRequest
     [JsonPropertyName("batch")]
     public BatchRequest Batch { get; set; }
 
-    internal class BatchRequest
+    internal sealed class BatchRequest
     {
         [JsonPropertyName("ids")]
         public IList<string> Ids { get; set; }
 
         [JsonPropertyName("vectors")]
-        public IList<IEnumerable<float>> Vectors { get; set; }
+        public IList<ReadOnlyMemory<float>> Vectors { get; set; }
 
         [JsonPropertyName("payloads")]
         public IList<Dictionary<string, object>> Payloads { get; set; }
 
         internal BatchRequest()
         {
-            this.Ids = new List<string>();
-            this.Vectors = new List<IEnumerable<float>>();
-            this.Payloads = new List<Dictionary<string, object>>();
+            this.Ids = [];
+            this.Vectors = [];
+            this.Payloads = [];
         }
     }
 

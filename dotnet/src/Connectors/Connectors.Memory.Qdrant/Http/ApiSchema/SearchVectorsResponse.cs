@@ -1,16 +1,20 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes: Used for Json Deserialization
-internal class SearchVectorsResponse : QdrantResponse
+[Experimental("SKEXP0020")]
+internal sealed class SearchVectorsResponse : QdrantResponse
 {
-    internal class ScoredPoint
+    internal sealed class ScoredPoint
     {
         [JsonPropertyName("id")]
+        [JsonConverter(typeof(NumberToStringConverter))]
         public string Id { get; }
 
         [JsonPropertyName("version")]
@@ -23,10 +27,10 @@ internal class SearchVectorsResponse : QdrantResponse
         public Dictionary<string, object> Payload { get; set; }
 
         [JsonPropertyName("vector")]
-        public IEnumerable<float> Vector { get; }
+        public ReadOnlyMemory<float> Vector { get; }
 
         [JsonConstructor]
-        public ScoredPoint(string id, double? score, Dictionary<string, object> payload, IEnumerable<float> vector)
+        public ScoredPoint(string id, double? score, Dictionary<string, object> payload, ReadOnlyMemory<float> vector)
         {
             this.Id = id;
             this.Score = score;
@@ -48,7 +52,7 @@ internal class SearchVectorsResponse : QdrantResponse
 
     private SearchVectorsResponse()
     {
-        this.Results = new List<ScoredPoint>();
+        this.Results = [];
     }
 
     #endregion

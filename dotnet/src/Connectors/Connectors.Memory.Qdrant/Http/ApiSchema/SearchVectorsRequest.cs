@@ -1,16 +1,18 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json.Serialization;
-using Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Diagnostics;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
-internal class SearchVectorsRequest : IValidatable
+[Experimental("SKEXP0020")]
+internal sealed class SearchVectorsRequest
 {
     [JsonPropertyName("vector")]
-    public IEnumerable<float> StartingVector { get; set; } = System.Array.Empty<float>();
+    public ReadOnlyMemory<float> StartingVector { get; set; }
 
     [JsonPropertyName("filter")]
     public Filter Filters { get; set; }
@@ -40,7 +42,7 @@ internal class SearchVectorsRequest : IValidatable
         return new SearchVectorsRequest(collectionName).SimilarTo(new float[vectorSize]);
     }
 
-    public SearchVectorsRequest SimilarTo(IEnumerable<float> vector)
+    public SearchVectorsRequest SimilarTo(ReadOnlyMemory<float> vector)
     {
         this.StartingVector = vector;
         return this;
@@ -55,7 +57,7 @@ internal class SearchVectorsRequest : IValidatable
 
     public SearchVectorsRequest HavingTags(IEnumerable<string>? tags)
     {
-        if (tags == null) { return this; }
+        if (tags is null) { return this; }
 
         foreach (var tag in tags)
         {
@@ -80,9 +82,9 @@ internal class SearchVectorsRequest : IValidatable
         return this;
     }
 
-    public SearchVectorsRequest IncludeVectorData()
+    public SearchVectorsRequest IncludeVectorData(bool withVector)
     {
-        this.WithVector = true;
+        this.WithVector = withVector;
         return this;
     }
 
@@ -103,25 +105,21 @@ internal class SearchVectorsRequest : IValidatable
         return this.FromPosition(0).Take(1);
     }
 
-    public void Validate()
-    {
-        Verify.NotNull(this.StartingVector, "Missing target, either provide a vector or a vector size");
-        Verify.NotNullOrEmpty(this._collectionName, "The collection name is empty");
-        Verify.True(this.Limit > 0, "The number of vectors must be greater than zero");
-        this.Filters.Validate();
-    }
-
     public HttpRequestMessage Build()
     {
-        this.Validate();
+        Verify.NotNull(this.StartingVector);
+        Verify.NotNullOrWhiteSpace(this._collectionName);
+        Verify.True(this.Limit > 0, "The number of vectors must be greater than zero");
+        this.Filters.Validate();
+
         return HttpRequest.CreatePostRequest(
             $"collections/{this._collectionName}/points/search",
             payload: this);
     }
 
-    internal class Filter : IValidatable
+    internal sealed class Filter
     {
-        internal class Match : IValidatable
+        internal sealed class Match
         {
             [JsonPropertyName("value")]
             public object Value { get; set; }
@@ -130,13 +128,9 @@ internal class SearchVectorsRequest : IValidatable
             {
                 this.Value = string.Empty;
             }
-
-            public void Validate()
-            {
-            }
         }
 
-        internal class Must : IValidatable
+        internal sealed class Must
         {
             [JsonPropertyName("key")]
             public string Key { get; set; }
@@ -168,7 +162,7 @@ internal class SearchVectorsRequest : IValidatable
 
         internal Filter()
         {
-            this.Conditions = new();
+            this.Conditions = [];
         }
 
         internal Filter ValueMustMatch(string key, object value)

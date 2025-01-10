@@ -11,7 +11,7 @@ tips on how you can make reporting your issue as effective as possible.
 
 ### Where to Report
 
-New issues can be reported in our [list of issues](https://github.com/semantic-kernel/issues).
+New issues can be reported in our [list of issues](https://github.com/microsoft/semantic-kernel/issues).
 
 Before filing a new issue, please search the list of issues to make sure it does
 not already exist.
@@ -43,8 +43,12 @@ Project maintainers will merge accepted code changes from contributors.
 
 DO's:
 
-- **DO** follow the standard
-  [.NET coding style](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+- **DO** follow the standard coding conventions
+
+  - [.NET](https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+  - [Python](https://pypi.org/project/black/)
+  - [Typescript](https://typescript-eslint.io/rules/)/[React](https://github.com/jsx-eslint/eslint-plugin-react/tree/master/docs/rules)
+
 - **DO** give priority to the current style of the project or file you're changing
   if it diverges from the general guidelines.
 - **DO** include tests when adding new features. When fixing bugs, start with
@@ -88,14 +92,50 @@ We use and recommend the following workflow:
      "issue-123" or "githubhandle-issue".
 4. Make and commit your changes to your branch.
 5. Add new tests corresponding to your change, if applicable.
-6. Build the repository with your changes.
-   - Make sure that the builds are clean.
-   - Make sure that the tests are all passing, including your new tests.
+6. Run the relevant scripts in [the section below](https://github.com/microsoft/semantic-kernel/blob/main/CONTRIBUTING.md#dev-scripts) to ensure that your build is clean and all tests are passing.
 7. Create a PR against the repository's **main** branch.
    - State in the description what issue or improvement your change is addressing.
    - Verify that all the Continuous Integration checks are passing.
 8. Wait for feedback or approval of your changes from the code maintainers.
 9. When area owners have signed off, and all checks are green, your PR will be merged.
+
+### Development scripts
+
+The scripts below are used to build, test, and lint within the project.
+
+- Python: see [python/DEV_SETUP.md](https://github.com/microsoft/semantic-kernel/blob/main/python/DEV_SETUP.md#pipeline-checks).
+- .NET:
+  - Build/Test: `run build.cmd` or `bash build.sh`
+  - Linting (auto-fix): `dotnet format`
+- Typescript:
+  - Build/Test: `yarn build`
+  - Linting (auto-fix): `yarn lint:fix`
+
+### Adding Plugins and Memory Connectors
+
+When considering contributions to plugins and memory connectors for Semantic
+Kernel, please note the following guidelines:
+
+#### Plugins
+
+We appreciate your interest in extending Semantic Kernel's functionality through
+plugins. However, we want to clarify our approach to hosting plugins within our
+GitHub repository. To maintain a clean and manageable codebase, we will not be
+hosting plugins directly in the Semantic Kernel GitHub repository.
+Instead, we encourage contributors to host their plugin code in separate
+repositories under their own GitHub accounts or organization. You can then
+provide a link to your plugin repository in the relevant discussions, issues,
+or documentation within the Semantic Kernel repository. This approach ensures
+that each plugin can be maintained independently and allows for easier tracking
+of updates and issues specific to each plugin.
+
+#### Memory Connectors
+
+For memory connectors, while we won't be directly adding hosting for them within
+the Semantic Kernel repository, we highly recommend building memory connectors
+as separate plugins. Memory connectors play a crucial role in interfacing with
+external memory systems, and treating them as plugins enhances modularity and
+maintainability.
 
 ### PR - CI Process
 

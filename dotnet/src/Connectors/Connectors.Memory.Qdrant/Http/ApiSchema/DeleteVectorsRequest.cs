@@ -1,13 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json.Serialization;
-using Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Diagnostics;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
-internal class DeleteVectorsRequest : IValidatable
+[Experimental("SKEXP0020")]
+internal sealed class DeleteVectorsRequest
 {
     [JsonPropertyName("points")]
     public List<string> Ids { get; set; }
@@ -17,12 +18,6 @@ internal class DeleteVectorsRequest : IValidatable
         return new DeleteVectorsRequest(collectionName);
     }
 
-    public void Validate()
-    {
-        Verify.NotNullOrEmpty(this._collectionName, "The collection name is empty");
-        Verify.NotNullOrEmpty(this.Ids, "The list of vectors to delete is NULL or empty");
-    }
-
     public DeleteVectorsRequest DeleteVector(string qdrantPointId)
     {
         Verify.NotNull(qdrantPointId, "The point ID is NULL");
@@ -30,9 +25,18 @@ internal class DeleteVectorsRequest : IValidatable
         return this;
     }
 
+    public DeleteVectorsRequest DeleteRange(IEnumerable<string> qdrantPointIds)
+    {
+        Verify.NotNull(qdrantPointIds, "The point ID collection is NULL");
+        this.Ids.AddRange(qdrantPointIds);
+        return this;
+    }
+
     public HttpRequestMessage Build()
     {
-        this.Validate();
+        Verify.NotNullOrWhiteSpace(this._collectionName, "collectionName");
+        Verify.NotNullOrEmpty(this.Ids, "The list of vectors to delete is NULL or empty");
+
         return HttpRequest.CreatePostRequest(
             $"collections/{this._collectionName}/points/delete",
             payload: this);
@@ -44,7 +48,7 @@ internal class DeleteVectorsRequest : IValidatable
 
     private DeleteVectorsRequest(string collectionName)
     {
-        this.Ids = new List<string>();
+        this.Ids = [];
         this._collectionName = collectionName;
     }
 

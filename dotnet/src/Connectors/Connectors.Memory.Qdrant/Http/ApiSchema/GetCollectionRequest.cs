@@ -1,11 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
-internal class GetCollectionsRequest
+[Experimental("SKEXP0020")]
+internal sealed class GetCollectionsRequest
 {
     /// <summary>
     /// Name of the collection to request vectors from
