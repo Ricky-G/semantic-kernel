@@ -1,13 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
-internal class GetVectorsRequest
+[Experimental("SKEXP0020")]
+internal sealed class GetVectorsRequest
 {
     /// <summary>
     /// Name of the collection to request vectors from
@@ -25,7 +27,7 @@ internal class GetVectorsRequest
     /// Array of vector IDs to retrieve
     /// </summary>
     [JsonPropertyName("ids")]
-    public IEnumerable<string> PointIds { get; set; } = new List<string>();
+    public IEnumerable<string> PointIds { get; set; } = [];
 
     /// <summary>
     /// Select which payload to return with the response. Default: All
@@ -66,16 +68,16 @@ internal class GetVectorsRequest
         return this;
     }
 
-    public GetVectorsRequest WithVectors(bool withVectors)
+    public GetVectorsRequest WithVectors(bool withEmbeddings)
     {
-        this.WithVector = withVectors;
+        this.WithVector = withEmbeddings;
         return this;
     }
 
     public HttpRequestMessage Build()
     {
-        return HttpRequest.CreateGetRequest(
-            $"/collections/{this.Collection}/points",
+        return HttpRequest.CreatePostRequest(
+            $"collections/{this.Collection}/points",
             payload: this);
     }
 

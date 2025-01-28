@@ -2,7 +2,6 @@
 
 using System;
 using System.Text.Json;
-using Microsoft.SemanticKernel.AI.Embeddings;
 using Microsoft.SemanticKernel.Memory;
 using Xunit;
 
@@ -15,7 +14,8 @@ public class MemoryRecordTests
     private readonly string _text = "text";
     private readonly string _description = "description";
     private readonly string _externalSourceName = "externalSourceName";
-    private readonly Embedding<float> _embedding = new Embedding<float>(new float[] { 1, 2, 3 });
+    private readonly string _additionalMetadata = "value";
+    private readonly ReadOnlyMemory<float> _embedding = new([1, 2, 3]);
 
     [Fact]
     public void ItCanBeConstructedFromMetadataAndVector()
@@ -26,7 +26,8 @@ public class MemoryRecordTests
             id: this._id,
             text: this._text,
             description: this._description,
-            externalSourceName: this._externalSourceName);
+            externalSourceName: this._externalSourceName,
+            additionalMetadata: this._additionalMetadata);
 
         // Act
         var memoryRecord = new MemoryRecord(metadata, this._embedding, "key", DateTimeOffset.Now);
@@ -37,7 +38,7 @@ public class MemoryRecordTests
         Assert.Equal(this._text, memoryRecord.Metadata.Text);
         Assert.Equal(this._description, memoryRecord.Metadata.Description);
         Assert.Equal(this._externalSourceName, memoryRecord.Metadata.ExternalSourceName);
-        Assert.Equal(this._embedding.Vector, memoryRecord.Embedding.Vector);
+        Assert.True(this._embedding.Span.SequenceEqual(memoryRecord.Embedding.Span));
     }
 
     [Fact]
@@ -56,7 +57,7 @@ public class MemoryRecordTests
         Assert.Equal(this._text, memoryRecord.Metadata.Text);
         Assert.Equal(this._description, memoryRecord.Metadata.Description);
         Assert.Equal(string.Empty, memoryRecord.Metadata.ExternalSourceName);
-        Assert.Equal(this._embedding.Vector, memoryRecord.Embedding.Vector);
+        Assert.True(this._embedding.Span.SequenceEqual(memoryRecord.Embedding.Span));
     }
 
     [Fact]
@@ -75,23 +76,26 @@ public class MemoryRecordTests
         Assert.Equal(string.Empty, memoryRecord.Metadata.Text);
         Assert.Equal(this._description, memoryRecord.Metadata.Description);
         Assert.Equal(this._externalSourceName, memoryRecord.Metadata.ExternalSourceName);
-        Assert.Equal(this._embedding.Vector, memoryRecord.Embedding.Vector);
+        Assert.True(this._embedding.Span.SequenceEqual(memoryRecord.Embedding.Span));
     }
 
     [Fact]
     public void ItCanBeCreatedFromSerializedMetadata()
     {
         // Arrange
-        string jsonString = @"{
-            ""is_reference"": false,
-            ""id"": ""Id"",
-            ""text"": ""text"",
-            ""description"": ""description"",
-            ""external_source_name"": ""externalSourceName""
-        }";
+        string jsonString = """
+            {
+                "is_reference": false,
+                "id": "Id",
+                "text": "text",
+                "description": "description",
+                "external_source_name": "externalSourceName",
+                "additional_metadata": "value"
+            }
+            """;
 
         // Act
-        var memoryRecord = MemoryRecord.FromJson(jsonString, this._embedding);
+        var memoryRecord = MemoryRecord.FromJsonMetadata(jsonString, this._embedding);
 
         // Assert
         Assert.Equal(this._isReference, memoryRecord.Metadata.IsReference);
@@ -99,29 +103,32 @@ public class MemoryRecordTests
         Assert.Equal(this._text, memoryRecord.Metadata.Text);
         Assert.Equal(this._description, memoryRecord.Metadata.Description);
         Assert.Equal(this._externalSourceName, memoryRecord.Metadata.ExternalSourceName);
-        Assert.Equal(this._embedding.Vector, memoryRecord.Embedding.Vector);
+        Assert.Equal(this._additionalMetadata, memoryRecord.Metadata.AdditionalMetadata);
+        Assert.True(this._embedding.Span.SequenceEqual(memoryRecord.Embedding.Span));
     }
 
     [Fact]
     public void ItCanBeDeserializedFromJson()
     {
         // Arrange
-        string jsonString = @"{
-            ""metadata"": {
-                ""is_reference"": false,
-                ""id"": ""Id"",
-                ""text"": ""text"",
-                ""description"": ""description"",
-                ""external_source_name"": ""externalSourceName""
-            },
-            ""embedding"": {
-                ""vector"": [
+        string jsonString = """
+            {
+                "metadata": {
+                    "is_reference": false,
+                    "id": "Id",
+                    "text": "text",
+                    "description": "description",
+                    "external_source_name": "externalSourceName",
+                    "additional_metadata": "value"
+                },
+                "embedding":
+                [
                     1,
                     2,
                     3
                 ]
             }
-        }";
+            """;
 
         // Act
         var memoryRecord = JsonSerializer.Deserialize<MemoryRecord>(jsonString);
@@ -133,43 +140,49 @@ public class MemoryRecordTests
         Assert.Equal(this._text, memoryRecord.Metadata.Text);
         Assert.Equal(this._description, memoryRecord.Metadata.Description);
         Assert.Equal(this._externalSourceName, memoryRecord.Metadata.ExternalSourceName);
-        Assert.Equal(this._embedding.Vector, memoryRecord.Embedding.Vector);
+        Assert.Equal(this._externalSourceName, memoryRecord.Metadata.ExternalSourceName);
+        Assert.True(this._embedding.Span.SequenceEqual(memoryRecord.Embedding.Span));
     }
 
     [Fact]
     public void ItCanBeSerialized()
     {
         // Arrange
-        string jsonString = @"{
-            ""embedding"": {
-                ""vector"": [
+        string jsonString = """
+            {
+                "embedding":
+                [
                     1,
                     2,
                     3
-                ]
-            },
-            ""metadata"": {
-                ""is_reference"": false,
-                ""external_source_name"": ""externalSourceName"",
-                ""id"": ""Id"",
-                ""description"": ""description"",
-                ""text"": ""text""
-            },
-            ""key"": ""key"",
-            ""timestamp"": null
-        }";
+                ],
+                "metadata": {
+                    "is_reference": false,
+                    "external_source_name": "externalSourceName",
+                    "id": "Id",
+                    "description": "description",
+                    "text": "text",
+                    "additional_metadata": "value"
+                },
+                "key": "key",
+                "timestamp": null
+            }
+            """;
         var metadata = new MemoryRecordMetadata(
             isReference: this._isReference,
             id: this._id,
             text: this._text,
             description: this._description,
-            externalSourceName: this._externalSourceName);
+            externalSourceName: this._externalSourceName,
+            additionalMetadata: this._additionalMetadata);
         var memoryRecord = new MemoryRecord(metadata, this._embedding, "key");
 
         // Act
         string serializedRecord = JsonSerializer.Serialize(memoryRecord);
-        jsonString = jsonString.Replace("\n", string.Empty, StringComparison.Ordinal);
-        jsonString = jsonString.Replace(" ", string.Empty, StringComparison.Ordinal);
+#pragma warning disable CA1307 // Specify StringComparison for clarity; overload not available on .NET Framework
+        jsonString = jsonString.Replace("\n", string.Empty);
+        jsonString = jsonString.Replace(" ", string.Empty);
+#pragma warning restore CA1307
 
         // Assert
         Assert.Equal(jsonString, serializedRecord);
@@ -179,26 +192,32 @@ public class MemoryRecordTests
     public void ItsMetadataCanBeSerialized()
     {
         // Arrange
-        string jsonString = @"{
-                ""is_reference"": false,
-                ""external_source_name"": ""externalSourceName"",
-                ""id"": ""Id"",
-                ""description"": ""description"",
-                ""text"": ""text""
-            }";
+        string jsonString = """
+            {
+                "is_reference": false,
+                "external_source_name": "externalSourceName",
+                "id": "Id",
+                "description": "description",
+                "text": "text",
+                "additional_metadata": "value"
+            }
+            """;
 
         var metadata = new MemoryRecordMetadata(
             isReference: this._isReference,
             id: this._id,
             text: this._text,
             description: this._description,
-            externalSourceName: this._externalSourceName);
+            externalSourceName: this._externalSourceName,
+            additionalMetadata: this._additionalMetadata);
         var memoryRecord = new MemoryRecord(metadata, this._embedding, "key");
 
         // Act
         string serializedMetadata = memoryRecord.GetSerializedMetadata();
-        jsonString = jsonString.Replace("\n", string.Empty, StringComparison.Ordinal);
-        jsonString = jsonString.Replace(" ", string.Empty, StringComparison.Ordinal);
+#pragma warning disable CA1307 // Specify StringComparison for clarity; overload not available on .NET Framework
+        jsonString = jsonString.Replace("\n", string.Empty);
+        jsonString = jsonString.Replace(" ", string.Empty);
+#pragma warning restore CA1307
 
         // Assert
         Assert.Equal(jsonString, serializedMetadata);

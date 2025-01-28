@@ -1,14 +1,17 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace Microsoft.SemanticKernel.Connectors.Memory.Qdrant.Http.ApiSchema;
+namespace Microsoft.SemanticKernel.Connectors.Qdrant;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes: Used for Json Deserialization
-internal class GetVectorsResponse : QdrantResponse
+[Experimental("SKEXP0020")]
+internal sealed class GetVectorsResponse : QdrantResponse
 {
-    internal class Record
+    internal sealed class Record
     {
         [JsonPropertyName("id")]
         public string Id { get; set; }
@@ -19,10 +22,10 @@ internal class GetVectorsResponse : QdrantResponse
 
         [JsonPropertyName("vector")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public IEnumerable<float>? Vector { get; set; }
+        public ReadOnlyMemory<float>? Vector { get; set; }
 
         [JsonConstructor]
-        public Record(string id, Dictionary<string, object>? payload, IEnumerable<float>? vector)
+        public Record(string id, Dictionary<string, object>? payload, ReadOnlyMemory<float>? vector)
         {
             this.Id = id;
             this.Payload = payload;
@@ -34,6 +37,6 @@ internal class GetVectorsResponse : QdrantResponse
     /// Array of vectors and their associated metadata
     /// </summary>
     [JsonPropertyName("result")]
-    public IEnumerable<Record> Result { get; set; } = new List<Record>();
+    public IEnumerable<Record> Result { get; set; } = [];
 }
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
